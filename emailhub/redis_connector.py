@@ -5,9 +5,9 @@ class redis_connector():
     def __init__(self):
         self._init_client()
         self.mail_address_list = "mail_address"
-        self.msg_queue_set = "msg_queue"
-        self.abandon_list = "abandon"
-        self.duplicate_set = "duplicate"
+        self.msg_queue_hash = "msg_queue_hash"
+        self.abandon_list = "abandon_list"
+        self.duplicate_set = "duplicate_set"
 
 
     def _init_client(self):
