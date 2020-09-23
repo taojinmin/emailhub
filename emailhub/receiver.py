@@ -6,6 +6,7 @@ from email.utils import parseaddr
 import time
 import logging
 import asyncio
+from hashlib import md5
 
 
 logging.basicConfig(level=logging.INFO,
@@ -25,7 +26,7 @@ class receiver():
     def keep_listening(self, refresh_interval):
         while True:
             self.epoch += 1
-            logging.info("epoch: {}".format(self.epoch))
+            logging.info("epoch: {}, waiting for refresh...".format(self.epoch))
             time.sleep(refresh_interval)
             tasks = []
             loop = asyncio.get_event_loop()
@@ -48,7 +49,6 @@ class receiver():
                 self.connector.client.sadd(self.connector.abandon_list, member)
 
             
-
     async def get_newest_mail(self, username, password):
         server = poplib.POP3(self.pop_server)
         try:
@@ -73,17 +73,20 @@ class receiver():
         res = []
         for part in msg.walk():
             if not part.is_multipart():
-                data = part.get_payload(decode=False)
-                #charset = self.guess_charset(part)
-                #data.decode(charset)
-                res.append(data)
+                data = part.get_payload(decode=True)
+                charset = self.guess_charset(part)
+                data.decode(charset)
+                res.append(str(data))
                 break
         #server.dele(stat[0])
         server.close()
         res = "|".join(res) if res else None
-        if res:
-            logging.info("{} get a mail:{}".format(username, res))
+        res_md5 = md5(res.encode("utf-8")).hexdigest()
+        if res and not self.connector.client.sismember(self.connector.duplicate_set, res_md5):
+            logging.info("user:{} receive a mail:{}".format(username, res))
             self.res_list.append(res)
+            self.connector.client.sadd(self.connector.duplicate_set, res_md5)
+
 
     def guess_charset(self, msg):
         charset = msg.get_charset()

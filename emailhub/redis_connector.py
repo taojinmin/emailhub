@@ -7,19 +7,24 @@ class redis_connector():
         self.mail_address_list = "mail_address"
         self.msg_queue_set = "msg_queue"
         self.abandon_list = "abandon"
+        self.duplicate_set = "duplicate"
+
 
     def _init_client(self):
         self.client = redis.StrictRedis(host="localhost", port=6379,decode_responses=True)
+
 
     def upload_mail_address(self):
         with open("./mail_address.txt") as f:
             for line in f.readlines():
                 self.client.rpush(self.mail_address_list, line.strip())
 
+
     def lcard(self, name):
         list_count = self.client.llen(name)
         for index in range(list_count):
             yield self.client.lindex(name, index)
+
 
 if __name__ == "__main__":
     connector = redis_connector()
